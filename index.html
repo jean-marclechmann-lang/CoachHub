@@ -288,9 +288,33 @@
     </div>
     <div class="card">
         <div class="card-title" id="feedback-details-title">📝 Feedback Details</div>
-        <div class="form-group full" style="margin-bottom:16px">
-            <label id="lbl-desc">Detailed Description *</label>
-            <textarea id="sub-desc" placeholder="Provide a detailed description of the situation, what was observed, and any relevant context..."></textarea>
+        <div class="form-group full" style="margin-bottom:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;flex-wrap:wrap;gap:6px;">
+                <label id="lbl-desc">Detailed Description *</label>
+                <button id="ai-rewrite-btn" onclick="triggerAIRewrite()" style="display:none;background:linear-gradient(135deg,#4B286D,#7B5EA7);color:#fff;border:none;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;gap:6px;align-items:center;transition:opacity .2s;">✨ Rewrite for Impact</button>
+            </div>
+            <textarea id="sub-desc" placeholder="Provide a detailed description of the situation, what was observed, and any relevant context..." oninput="checkDescLength()"></textarea>
+        </div>
+        <div id="ai-rewrite-panel" style="display:none;background:linear-gradient(135deg,#F0EBF8,#EDE8F5);border:1.5px solid var(--tp);border-radius:10px;padding:16px;margin-bottom:16px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                <span style="font-size:18px;">✨</span>
+                <span style="font-size:15px;font-weight:700;color:var(--tp);">AI-Rewritten Version</span>
+                <span style="font-size:12px;color:var(--muted);margin-left:4px;">— Professional & factual, emotion removed</span>
+            </div>
+            <div id="ai-loading" style="display:none;text-align:center;padding:20px;color:var(--tp);">
+                <div style="font-size:24px;margin-bottom:8px;">✨</div>
+                <div style="font-size:14px;font-weight:600;">Rewriting for professional impact...</div>
+                <div style="font-size:12px;color:var(--muted);margin-top:4px;">Preserving all facts, removing emotional tone</div>
+            </div>
+            <div id="ai-result" style="display:none;">
+                <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;font-size:14px;line-height:1.6;" id="ai-rewritten-text"></div>
+                <div id="ai-suggestions" style="margin-bottom:12px;"></div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button onclick="acceptAIRewrite()" class="btn-primary" style="font-size:13px;padding:8px 16px;">✅ Use This</button>
+                    <button onclick="editAIRewrite()" class="abtn sec" style="font-size:13px;">✏️ Edit First</button>
+                    <button onclick="dismissAIRewrite()" class="abtn sec" style="font-size:13px;color:var(--muted);">✕ Keep Mine</button>
+                </div>
+            </div>
         </div>
         <div class="evidence-section">
             <div class="evidence-title" id="evidence-title">📎 Supporting Evidence <span style="font-size:12px;font-weight:500;color:var(--muted)" id="evidence-optional">(Optional but strongly encouraged)</span></div>
@@ -411,7 +435,7 @@
         <div class="stat-card green"><div class="stat-number" id="s-comp">0</div><div class="stat-label" id="stat-comp-lbl">✅ Completed</div></div>
         <div class="stat-card red"><div class="stat-number" id="s-esc">0</div><div class="stat-label" id="stat-esc-lbl">⚠️ Escalated</div></div>
         <div class="stat-card orange"><div class="stat-number" id="s-risk">0</div><div class="stat-label" id="stat-risk-lbl">🚨 At Risk</div></div>
-        <div class="stat-card" style="border-color:#C05000;"><div class="stat-number" id="s-returned" style="color:#C05000;">0</div><div class="stat-label" id="stat-returned-lbl">↩ Returned</div></div>
+        <div class="stat-card clickable" style="border-color:#C05000;cursor:pointer;" onclick="viewReturnedSubmissions()" title="Click to view returned submissions"><div class="stat-number" id="s-returned" style="color:#C05000;">0</div><div class="stat-label" id="stat-returned-lbl">↩ Returned</div></div>
         <div class="stat-card"><div class="stat-number" id="s-avg">—</div><div class="stat-label" id="stat-avg-lbl">⏱ Avg Resp (hrs)</div></div>
     </div>
 
@@ -1191,6 +1215,11 @@ function clearForm(){
     document.getElementById('class-preview').classList.remove('show');
     document.getElementById('tech-lookup-status').style.display='none';
     clearFile();currentTech=null;
+    // Reset AI rewrite
+    dismissAIRewrite();
+    var aiBtn = document.getElementById('ai-rewrite-btn');
+    if (aiBtn) aiBtn.style.display = 'none';
+    window._resubmittingFrom = null;
 }
 // ============================================================
 // TRACK SUBMISSION
@@ -1835,6 +1864,185 @@ function renderReturnsChart(subs) {
                       x: { ticks: { font: { size: 10 } } } }
         }
     });
+}
+// ============================================================
+// RETURNED SUBMISSIONS — DASHBOARD DRILL DOWN
+// ============================================================
+function viewReturnedSubmissions() {
+    showView('manage');
+    // Set the status filter to Returned and clear others
+    setTimeout(function() {
+        var statusFilter = document.getElementById('m-status');
+        var searchFilter = document.getElementById('m-search');
+        var priorityFilter = document.getElementById('m-priority');
+        if (statusFilter) statusFilter.value = 'Returned to Submitter';
+        if (searchFilter) searchFilter.value = '';
+        if (priorityFilter) priorityFilter.value = '';
+        renderManage();
+        // Scroll to top of manage section
+        var manageEl = document.getElementById('view-manage');
+        if (manageEl) manageEl.scrollIntoView({behavior:'smooth', block:'start'});
+        showToast('Showing all returned submissions', 'warning');
+    }, 100);
+}
+// ============================================================
+// AI REWRITE
+// ============================================================
+var aiOriginalText = '';
+var aiRewrittenText = '';
+var aiSuggestedCategories = [];
+var aiSuggestedPriority = null;
+
+function checkDescLength() {
+    var desc = document.getElementById('sub-desc');
+    var btn = document.getElementById('ai-rewrite-btn');
+    if (!desc || !btn) return;
+    var text = desc.value.trim();
+    // Show button after at least one sentence (period, !, ? or 60+ chars)
+    var hasSentence = text.length >= 60 || /[.!?]/.test(text);
+    btn.style.display = hasSentence ? 'inline-flex' : 'none';
+}
+
+function triggerAIRewrite() {
+    var desc = document.getElementById('sub-desc');
+    if (!desc || !desc.value.trim()) {
+        showToast('Please write a description first.', 'warning');
+        return;
+    }
+    aiOriginalText = desc.value.trim();
+    var panel = document.getElementById('ai-rewrite-panel');
+    var loading = document.getElementById('ai-loading');
+    var result = document.getElementById('ai-result');
+    if (panel) panel.style.display = 'block';
+    if (loading) loading.style.display = 'block';
+    if (result) result.style.display = 'none';
+    // Scroll panel into view
+    if (panel) panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+    // Get checked categories for context
+    var checkedCats = Array.from(document.querySelectorAll('.cat-check:checked')).map(function(c){return c.value;});
+    var techName = document.getElementById('tr-name') ? document.getElementById('tr-name').textContent : '';
+    var prompt = 'You are an expert HR and coaching communications specialist for a Canadian telecom company (TELUS). ' +
+        'A field services manager or agent has written feedback about a technician that needs to be professionally rewritten.\n\n' +
+        'TASK: Rewrite the description to be professional, factual, and tone-neutral. Remove all emotional language, ' +
+        'inflammatory words, personal attacks, and frustration. Preserve every factual detail. ' +
+        'The goal is for the receiving manager to focus on the coaching opportunity, not the tone.\n\n' +
+        'TECHNICIAN: ' + (techName || 'Unknown') + '\n' +
+        'ORIGINAL DESCRIPTION:\n' + aiOriginalText + '\n\n' +
+        'Also analyze the content and respond in this exact JSON format (no markdown, no backticks):\n' +
+        '{\n' +
+        '  "rewritten": "the professionally rewritten description here",\n' +
+        '  "suggestedCategories": ["category1","category2"],\n' +
+        '  "suggestedPriority": 1,\n' +
+        '  "priorityReason": "brief reason why this priority",\n' +
+        '  "toneIssuesFound": true\n' +
+        '}\n\n' +
+        'Valid categories: customer-impact, safety, ethical, process, technical, recognition\n' +
+        'Priority: 1 (same day - customer/safety/ethical), 2 (48hr - process/technical), 3 (72hr - recognition)\n' +
+        'Return ONLY the JSON object, nothing else.';
+
+    fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            model: 'claude-sonnet-4-6',
+            max_tokens: 1000,
+            messages: [{role: 'user', content: prompt}]
+        })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        var text = '';
+        if (data.content && data.content[0] && data.content[0].text) {
+            text = data.content[0].text.trim();
+        }
+        try {
+            // Strip any accidental markdown fences
+            text = text.replace(/```json|```/g, '').trim();
+            var parsed = JSON.parse(text);
+            aiRewrittenText = parsed.rewritten || '';
+            aiSuggestedCategories = parsed.suggestedCategories || [];
+            aiSuggestedPriority = parsed.suggestedPriority || null;
+            var priorityReason = parsed.priorityReason || '';
+            var toneFound = parsed.toneIssuesFound;
+            showAIResult(aiRewrittenText, aiSuggestedCategories, aiSuggestedPriority, priorityReason, toneFound);
+        } catch(e) {
+            // Fallback if JSON parse fails — use raw text as rewrite
+            aiRewrittenText = text;
+            showAIResult(text, [], null, '', false);
+        }
+    })
+    .catch(function(err) {
+        if (loading) loading.style.display = 'none';
+        showToast('AI rewrite failed. Please try again.', 'warning');
+        console.error('AI rewrite error:', err);
+    });
+}
+
+function showAIResult(rewritten, cats, priority, priorityReason, toneFound) {
+    var loading = document.getElementById('ai-loading');
+    var result = document.getElementById('ai-result');
+    var textEl = document.getElementById('ai-rewritten-text');
+    var sugEl = document.getElementById('ai-suggestions');
+    if (loading) loading.style.display = 'none';
+    if (result) result.style.display = 'block';
+    if (textEl) textEl.textContent = rewritten;
+    // Build suggestions HTML
+    var sugHtml = '';
+    if (toneFound) {
+        sugHtml += '<div style="background:#FFF5E0;border:1px solid #F5A623;border-radius:6px;padding:8px 12px;margin-bottom:8px;font-size:13px;color:#856404;">⚠️ Emotional tone detected in original — rewrite removes this while preserving all facts.</div>';
+    }
+    if (cats && cats.length) {
+        sugHtml += '<div style="margin-bottom:8px;"><span style="font-size:13px;font-weight:600;color:var(--tp);">🤖 Suggested categories: </span>';
+        sugHtml += cats.map(function(c) {
+            var labels = {'customer-impact':'🔴 Customer Impact','safety':'🔴 Safety','ethical':'🔴 Ethical','process':'🟡 Process','technical':'🟡 Technical','recognition':'🟢 Recognition'};
+            return '<span style="background:#EDE8F5;color:var(--tp);border-radius:4px;padding:2px 8px;font-size:12px;font-weight:600;margin-right:4px;">' + (labels[c]||c) + '</span>';
+        }).join('');
+        sugHtml += '</div>';
+    }
+    if (priority) {
+        var pColors = {1:'#D0021B',2:'#E07B00',3:'#3A7A00'};
+        var pLabels = {1:'P1 — Same Day',2:'P2 — 48 Hours',3:'P3 — 72 Hours'};
+        sugHtml += '<div style="font-size:13px;margin-bottom:4px;"><span style="font-weight:600;color:var(--tp);">🎯 Suggested priority: </span>' +
+            '<span style="background:' + (pColors[priority]||'#4B286D') + ';color:#fff;border-radius:4px;padding:2px 8px;font-size:12px;font-weight:700;">' + (pLabels[priority]||'P'+priority) + '</span>' +
+            (priorityReason ? '<span style="color:var(--muted);margin-left:8px;font-size:12px;">— ' + priorityReason + '</span>' : '') + '</div>';
+    }
+    if (sugEl) sugEl.innerHTML = sugHtml;
+}
+
+function acceptAIRewrite() {
+    var desc = document.getElementById('sub-desc');
+    if (desc && aiRewrittenText) desc.value = aiRewrittenText;
+    // Apply suggested categories
+    if (aiSuggestedCategories && aiSuggestedCategories.length) {
+        document.querySelectorAll('.cat-check').forEach(function(cb) { cb.checked = false; cb.closest('.cat-item').classList.remove('selected'); });
+        aiSuggestedCategories.forEach(function(cat) {
+            var cb = document.querySelector('.cat-check[value="' + cat + '"]');
+            if (cb) { cb.checked = true; cb.closest('.cat-item').classList.add('selected'); }
+        });
+        updateClass();
+    }
+    dismissAIRewrite();
+    showToast('✨ AI rewrite applied!', 'success');
+}
+
+function editAIRewrite() {
+    var desc = document.getElementById('sub-desc');
+    if (desc && aiRewrittenText) desc.value = aiRewrittenText;
+    dismissAIRewrite();
+    desc.focus();
+    showToast('Rewritten text loaded — edit as needed.', 'info');
+}
+
+function dismissAIRewrite() {
+    var panel = document.getElementById('ai-rewrite-panel');
+    var loading = document.getElementById('ai-loading');
+    var result = document.getElementById('ai-result');
+    if (panel) panel.style.display = 'none';
+    if (loading) loading.style.display = 'none';
+    if (result) result.style.display = 'none';
+    aiRewrittenText = '';
+    aiSuggestedCategories = [];
+    aiSuggestedPriority = null;
 }
 // ============================================================
 // UI HELPERS
