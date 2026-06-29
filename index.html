@@ -157,6 +157,24 @@
         .admin-table-scroll::-webkit-scrollbar-track{background:#F4F2F8;}
         .admin-table-scroll::-webkit-scrollbar-thumb{background:#C5B8DC;border-radius:3px;}
         .admin-table-scroll table{min-width:900px;}
+        .template-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-bottom:4px;}
+        .template-btn{background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:12px 10px;cursor:pointer;text-align:center;transition:all .2s;font-family:inherit;}
+        .template-btn:hover{border-color:var(--tp);background:#F4F2F8;transform:translateY(-2px);}
+        .template-btn .t-icon{font-size:24px;margin-bottom:4px;}
+        .template-btn .t-name{font-size:12px;font-weight:700;color:var(--tp);}
+        .template-btn .t-priority{font-size:10px;margin-top:2px;}
+        .trend-badge{display:inline-flex;align-items:center;gap:3px;background:#FFE8EC;color:#9B0000;border-radius:12px;padding:2px 8px;font-size:11px;font-weight:700;border:1px solid #FFB3C0;}
+        .countdown-badge{display:inline-flex;align-items:center;gap:4px;border-radius:12px;padding:3px 10px;font-size:12px;font-weight:700;}
+        .countdown-urgent{background:#FFE8EC;color:#9B0000;border:1px solid #FFB3C0;animation:pulse 2s infinite;}
+        .countdown-warning{background:#FFF5E0;color:#856404;border:1px solid #FFD97A;}
+        .countdown-ok{background:#EAFFD6;color:#3A7A00;border:1px solid #B8E68A;}
+        @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.6;}}
+        .recognition-card{background:linear-gradient(135deg,#EAFFD6,#D4F4A0);border:1.5px solid #66CC00;border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;}
+        .recognition-rank{font-size:24px;font-weight:900;color:var(--td);width:32px;text-align:center;}
+        .recognition-info{flex:1;}
+        .recognition-name{font-size:15px;font-weight:700;color:var(--td);}
+        .recognition-detail{font-size:12px;color:#3A7A00;margin-top:2px;}
+        .recognition-count{background:var(--tg);color:var(--td);border-radius:20px;padding:4px 12px;font-size:13px;font-weight:800;}
         @media(max-width:768px){.form-grid,.cat-grid,.tech-info-grid,.charts-grid,.charts-grid-4{grid-template-columns:1fr}.stats-grid{grid-template-columns:repeat(2,1fr)}.header-top{height:auto;padding:14px 16px;flex-wrap:wrap}}
     </style>
 </head>
@@ -188,6 +206,7 @@
         <button class="nbtn" onclick="showView('manage')">📋 <span id="nav-manage-lbl">Manage</span></button>
         <button class="nbtn" onclick="showView('dashboard')">📊 <span id="nav-dashboard-lbl">Dashboard</span></button>
         <button class="nbtn" id="admin-nav-btn" onclick="showView('admin')" style="display:none">⚙️ <span id="nav-admin-lbl">Admin View</span></button>
+        <button class="nbtn" onclick="showView('recognition')">🏆 <span>Recognition</span></button>
     </div>
 </div>
 <div class="main">
@@ -195,6 +214,17 @@
 <div class="view active" id="view-submit">
     <div class="section-header"><div class="section-title" id="submit-title">➕ New CoachHub+ Submission</div></div>
     <div class="alert info" id="submit-mode-note">💡 Submissions are saved to Google Sheets and the manager is notified automatically via email.</div>
+    <div class="card" id="template-picker-card">
+        <div class="card-title">📋 Start from a Template <span style="font-size:12px;font-weight:400;color:var(--muted);">— or fill the form manually below</span></div>
+        <div class="template-grid">
+            <button class="template-btn" onclick="applyTemplate('missed')"><div class="t-icon">📅</div><div class="t-name">Missed Appointment / No Show</div><div class="t-priority" style="color:#E07B00;">P2 — 48hr</div></button>
+            <button class="template-btn" onclick="applyTemplate('safety')"><div class="t-icon">⛑️</div><div class="t-name">Safety Protocol Violation</div><div class="t-priority" style="color:#D0021B;">P1 — Same Day</div></button>
+            <button class="template-btn" onclick="applyTemplate('customer')"><div class="t-icon">😠</div><div class="t-name">Customer Complaint / Poor Service</div><div class="t-priority" style="color:#D0021B;">P1 — Same Day</div></button>
+            <button class="template-btn" onclick="applyTemplate('damage')"><div class="t-icon">🔨</div><div class="t-name">Property / Equipment Damage</div><div class="t-priority" style="color:#D0021B;">P1 — Same Day</div></button>
+            <button class="template-btn" onclick="applyTemplate('recognition')"><div class="t-icon">🌟</div><div class="t-name">Positive Recognition / Commendation</div><div class="t-priority" style="color:#3A7A00;">P3 — 72hr</div></button>
+            <button class="template-btn" onclick="applyTemplate('routing')"><div class="t-icon">🔀</div><div class="t-name">Improper Ticket Routing</div><div class="t-priority" style="color:#E07B00;">P2 — 48hr</div></button>
+        </div>
+    </div>
     <div class="card">
         <div class="card-title" id="submitter-info-title">👤 Submitter Information</div>
         <div class="form-grid">
@@ -518,6 +548,32 @@
         <div id="admin-pagination" style="display:flex;gap:6px;justify-content:center;margin-top:12px;flex-wrap:wrap;align-items:center;"></div>
     </div>
 </div>
+</div>
+<!-- RECOGNITION VIEW -->
+<div class="view" id="view-recognition">
+    <div class="section-header">
+        <div class="section-title">🏆 Recognition Wall — Top Performing Technicians</div>
+        <button class="abtn sec" onclick="renderRecognition()" style="font-size:12px;">🔄 Refresh</button>
+    </div>
+    <div class="alert success" style="margin-bottom:16px;">🌟 Celebrating excellence across all partners. Recognition submissions drive positive culture and technician morale.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+        <div class="card" style="margin-bottom:0;text-align:center;padding:20px;">
+            <div style="font-size:36px;font-weight:900;color:var(--tg);" id="rec-total-count">0</div>
+            <div style="font-size:14px;color:var(--muted);margin-top:4px;">Total Recognition Submissions</div>
+        </div>
+        <div class="card" style="margin-bottom:0;text-align:center;padding:20px;">
+            <div style="font-size:36px;font-weight:900;color:var(--tg);" id="rec-tech-count">0</div>
+            <div style="font-size:14px;color:var(--muted);margin-top:4px;">Technicians Recognized</div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-title">🥇 Top Recognized Technicians</div>
+        <div id="recognition-leaderboard"></div>
+    </div>
+    <div class="card">
+        <div class="card-title">📋 Recent Recognition Submissions</div>
+        <div id="recognition-recent"></div>
+    </div>
 </div>
 <!-- LOGIN MODAL -->
 <div class="modal-overlay show" id="modal-login">
@@ -1276,8 +1332,10 @@ function renderManage(){
         tb.innerHTML=paginated.map(function(s){
             return '<tr class="clickable-row" onclick="viewDetail(\''+s.refNumber+'\')">' +
                 '<td><strong style="font-family:monospace;color:var(--tp);font-size:13px">'+s.refNumber+'</strong>'+
+                (s.priority===1&&s.status!=='Coaching Completed'&&s.status!=='Closed'?'<div style="margin-top:3px">'+getCountdownBadge(s)+'</div>':'')+
                 (s.ccts?'<span style="color:var(--pr);font-size:11px;display:block">⚠️CCTS'+(s.cctsCaseNumber?' #'+s.cctsCaseNumber:'')+'</span>':'')+
                 (s.damage?'<span style="color:#7A3500;font-size:11px;display:block">🔨DMG</span>':'')+
+                (getTrendBadge(s.techId)?'<div style="margin-top:3px">'+getTrendBadge(s.techId)+'</div>':'')+
                 '</td>'+
                 '<td style="font-size:13px">'+s.submitterName+'</td>'+
                 '<td>'+s.techName+'<br><span style="font-size:12px;color:var(--muted)">'+s.techId+'</span></td>'+
@@ -1368,6 +1426,12 @@ function openSignoff(ref){
     html+='<input type="date" id="so-date" value="'+(sub.scheduledDate||today)+'"/></div>';
     html+='<div class="form-group" style="margin-bottom:14px"><label>'+t('followup_label')+'</label>';
     html+='<select id="so-followup"><option value="none">'+t('no_followup')+'</option><option value="7day">'+t('followup_7')+'</option><option value="30day">'+t('followup_30')+'</option><option value="90day">'+t('followup_90')+'</option><option value="formal">'+t('followup_formal')+'</option></select></div>';
+    html+='<div style="background:#EAFFD6;border:1.5px solid var(--tg);border-radius:8px;padding:12px 14px;margin-bottom:14px;">';
+    html+='<label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;"><input type="checkbox" id="tech-acknowledged" onchange="var w=document.getElementById(\'tech-comment-wrap\');if(w)w.style.display=this.checked?\'block\':\'none\';" style="width:18px;height:18px;margin-top:2px;accent-color:var(--tg);"/>';
+    html+='<div><div style="font-size:14px;font-weight:700;color:#2A7A00;">✅ Technician Acknowledgment</div>';
+    html+='<div style="font-size:13px;color:#3A7A00;margin-top:2px;">Technician has been informed and acknowledges this coaching session</div></div></label>';
+    html+='<div id="tech-comment-wrap" style="margin-top:10px;display:none;"><input type="text" id="tech-comment" placeholder="Optional: technician comment or response..." style="width:100%;border-color:var(--tg);"/></div>';
+    html+='</div>';
     html+='<div class="btn-row"><button class="btn-secondary" onclick="closeModal(\'modal-signoff\')">'+t('btn_cancel')+'</button>';
     html+='<button class="btn-primary" onclick="completeSignoff()">'+t('btn_complete_signoff')+'</button></div>';
     document.getElementById('signoff-body').innerHTML=html;
@@ -1384,8 +1448,15 @@ function completeSignoff(){
     if(!notes){showToast(t('please_enter_notes'),'warning');return;}
     var sub=submissions.find(function(s){return s.refNumber===ref;});
     if(!sub)return;
-    sub.status='Coaching Completed';sub.coachingNotes=notes;sub.coachingDate=date;sub.coachingFollowup=followup;
-    sub.statusHistory.push({status:'Coaching Completed',time:new Date().toISOString(),note:'Coaching completed. Notes recorded.'});
+    var techAck = document.getElementById('tech-acknowledged');
+    var techComment = document.getElementById('tech-comment');
+    sub.status='Coaching Completed';
+    sub.coachingNotes=notes;
+    sub.coachingDate=date;
+    sub.coachingFollowup=followup;
+    sub.techAcknowledged = techAck ? techAck.checked : false;
+    sub.techComment = (techComment && techComment.value) ? techComment.value.trim() : '';
+    sub.statusHistory.push({status:'Coaching Completed',time:new Date().toISOString(),note:'Coaching completed. Notes recorded.'+(sub.techAcknowledged?' Technician acknowledged.':'')});
     currentSignoffRef=null;closeModal('modal-signoff');
     renderManage();updateDashboard();renderAdmin();
     showToast(t('toast_signoff'),'success');
@@ -2080,6 +2151,181 @@ function dismissAIRewrite() {
     aiSuggestedPriority = null;
 }
 // ============================================================
+// SUBMISSION TEMPLATES
+// ============================================================
+var TEMPLATES = {
+    missed: {
+        categories: ['process'],
+        priority: 2,
+        ccts: false,
+        damage: false,
+        description: 'Missed Appointment / No Show — [DATE OF APPOINTMENT]\n\nTechnician Details:\n- Tech arrived: [YES / NO]\n- Appointment window: [TIME WINDOW e.g. 8AM-12PM]\n- Customer notified of late arrival: [YES / NO / UNKNOWN]\n\nWhat happened:\n[Describe what occurred — e.g. tech did not show, customer waited all day, no call made to customer]\n\nCustomer impact:\n[Describe how the customer was affected — frustration, time off work, service not restored, etc.]\n\nAction already taken:\n[Any steps already taken — callback attempted, rescheduled, etc.]'
+    },
+    safety: {
+        categories: ['safety'],
+        priority: 1,
+        ccts: false,
+        damage: false,
+        description: 'Safety Protocol Violation — [DATE OF INCIDENT]\n\nLocation / Job Site:\n[Address or site description]\n\nViolation observed:\n[Describe exactly what safety protocol was not followed — PPE not worn, ladder misuse, working on live equipment, etc.]\n\nPotential risk / outcome:\n[Describe the potential injury or harm that could have resulted]\n\nWitnesses:\n[Names of anyone else present]\n\nWas anyone injured? [YES / NO]\nIf yes, describe: [Details]\n\nImmediate action taken:\n[What was done on the spot — work stopped, supervisor called, etc.]'
+    },
+    customer: {
+        categories: ['customer-impact'],
+        priority: 1,
+        ccts: false,
+        damage: false,
+        description: 'Customer Complaint / Poor Service — [DATE OF INTERACTION]\n\nCustomer account / address:\n[Customer details if available]\n\nWhat the technician did or failed to do:\n[Specific behaviours observed — e.g. rude to customer, left without completing work, did not explain the issue]\n\nCustomer\'s response:\n[How the customer reacted — upset, requested escalation, threatened CCTS complaint, etc.]\n\nService outcome:\n[Was the service completed? Is the customer still without service?]\n\nWas a CCTS complaint mentioned? [YES / NO]\n\nAdditional context:\n[Anything else relevant to this submission]'
+    },
+    damage: {
+        categories: ['customer-impact', 'safety'],
+        priority: 1,
+        ccts: false,
+        damage: true,
+        description: 'Property / Equipment Damage — [DATE OF INCIDENT]\n\nLocation:\n[Customer address or site]\n\nWhat was damaged:\n[Describe the property or equipment — e.g. customer\'s wall, company vehicle, ladder fell on fence]\n\nHow the damage occurred:\n[Describe the sequence of events leading to the damage]\n\nEstimated severity:\n[Minor / Moderate / Significant — and estimated repair scope if known]\n\nCustomer reaction:\n[How did the customer respond?]\n\nWas damage reported to the customer at the time? [YES / NO]\n\nPhotographic evidence available? [YES / NO]\n[If yes, attach in the Supporting Evidence section below]'
+    },
+    recognition: {
+        categories: ['recognition'],
+        priority: 3,
+        ccts: false,
+        damage: false,
+        description: 'Positive Recognition / Commendation — [DATE OF INTERACTION]\n\nWhat the technician did exceptionally well:\n[Describe specifically what stood out — e.g. went above and beyond for the customer, solved a difficult technical problem, demonstrated great professionalism]\n\nCustomer feedback (if any):\n[Direct quotes or summary of what the customer said — e.g. customer called in to praise, left a 5-star review, sent an email]\n\nImpact:\n[How did this positively affect the customer or the team?]\n\nWould you recommend this technician for formal recognition? [YES / NO]\n\nAny additional comments:\n[Anything else you\'d like to highlight about this technician\'s performance]'
+    },
+    routing: {
+        categories: ['process', 'technical'],
+        priority: 2,
+        ccts: false,
+        damage: false,
+        description: 'Improper Ticket Routing — [DATE OF INCIDENT]\n\nWork Order #: [WO NUMBER]\n\nRouted FROM: [Department/queue ticket came from — e.g. Cable Repair]\nRouted TO (incorrectly): [Department/queue ticket was sent to — e.g. Drop Conduit]\nCorrect destination should have been: [Where it should have gone]\n\nTesting completed before routing: [YES / NO]\nIf no, what testing was skipped: [Describe]\n\nNotes provided on the ticket when routed: [ADEQUATE / INSUFFICIENT / NONE]\nIf insufficient, what was missing: [Describe what notes should have been included]\n\nImpact of improper routing:\n[e.g. job delayed X hours, receiving department had to re-diagnose, customer appointment missed]\n\nHas this happened before with this technician? [YES / NO / UNKNOWN]\n\nAdditional context:\n[Any other relevant details]'
+    }
+};
+
+function applyTemplate(type) {
+    var tpl = TEMPLATES[type];
+    if (!tpl) return;
+    // Pre-fill description
+    var descEl = document.getElementById('sub-desc');
+    if (descEl) {
+        descEl.value = tpl.description;
+        checkDescLength();
+    }
+    // Pre-check categories
+    document.querySelectorAll('.cat-check').forEach(function(cb) {
+        cb.checked = tpl.categories.indexOf(cb.value) >= 0;
+        cb.closest('.cat-item').classList.toggle('selected', tpl.categories.indexOf(cb.value) >= 0);
+    });
+    updateClass();
+    // Set flags
+    var cctsEl = document.getElementById('ccts-check');
+    var dmgEl = document.getElementById('damage-check');
+    if (cctsEl) cctsEl.checked = !!tpl.ccts;
+    if (dmgEl) { dmgEl.checked = !!tpl.damage; }
+    // Scroll to tech lookup
+    var techCard = document.getElementById('tech-id-input');
+    if (techCard) setTimeout(function(){ techCard.scrollIntoView({behavior:'smooth', block:'center'}); }, 200);
+    showToast('📋 Template applied — fill in the [BRACKETED] fields and look up the technician.', 'info');
+}
+// ============================================================
+// TREND DETECTION
+// ============================================================
+function getTechSubmissionCount(techId, days) {
+    var cutoff = new Date(Date.now() - days * 24 * 3600000);
+    return submissions.filter(function(s) {
+        return s.techId === techId &&
+               s.categories && s.categories.indexOf('recognition') < 0 &&
+               new Date(s.submittedAt) >= cutoff;
+    }).length;
+}
+function getTrendBadge(techId) {
+    var count30 = getTechSubmissionCount(techId, 30);
+    if (count30 >= 5) return '<span class="trend-badge">🔺 ' + count30 + ' in 30d</span>';
+    if (count30 >= 3) return '<span class="trend-badge" style="background:#FFF5E0;color:#856404;border-color:#FFD97A;">⚠️ ' + count30 + ' in 30d</span>';
+    return '';
+}
+// ============================================================
+// P1 COUNTDOWN
+// ============================================================
+function getCountdownBadge(sub) {
+    if (sub.priority !== 1) return '';
+    var hoursOpen = (Date.now() - new Date(sub.submittedAt)) / 3600000;
+    var hoursLeft = 8 - hoursOpen;
+    if (hoursLeft <= 0) {
+        return '<span class="countdown-badge countdown-urgent">🚨 OVERDUE ' + Math.abs(Math.round(hoursLeft)) + 'h</span>';
+    } else if (hoursLeft <= 2) {
+        return '<span class="countdown-badge countdown-urgent">⏱ ' + Math.round(hoursLeft * 60) + 'm left</span>';
+    } else if (hoursLeft <= 4) {
+        return '<span class="countdown-badge countdown-warning">⏱ ' + hoursLeft.toFixed(1) + 'h left</span>';
+    } else {
+        return '<span class="countdown-badge countdown-ok">⏱ ' + hoursLeft.toFixed(1) + 'h left</span>';
+    }
+}
+// ============================================================
+// RECOGNITION WALL
+// ============================================================
+function renderRecognition() {
+    var recSubs = getVisibleSubmissions().filter(function(s) {
+        return s.categories && s.categories.indexOf('recognition') >= 0;
+    });
+    // Stats
+    var totalEl = document.getElementById('rec-total-count');
+    var techEl = document.getElementById('rec-tech-count');
+    if (totalEl) totalEl.textContent = recSubs.length;
+    var uniqueTechs = {};
+    recSubs.forEach(function(s){ uniqueTechs[s.techId] = true; });
+    if (techEl) techEl.textContent = Object.keys(uniqueTechs).length;
+    // Leaderboard
+    var techCounts = {};
+    recSubs.forEach(function(s) {
+        if (!techCounts[s.techId]) techCounts[s.techId] = {name: s.techName, techId: s.techId, partner: s.partner, count: 0, latest: s.submittedAt};
+        techCounts[s.techId].count++;
+        if (s.submittedAt > techCounts[s.techId].latest) techCounts[s.techId].latest = s.submittedAt;
+    });
+    var ranked = Object.values(techCounts).sort(function(a,b){ return b.count - a.count; }).slice(0, 10);
+    var medals = ['🥇','🥈','🥉'];
+    var lb = document.getElementById('recognition-leaderboard');
+    if (lb) {
+        if (!ranked.length) {
+            lb.innerHTML = '<div class="empty-state">No recognition submissions yet. Be the first to celebrate a great technician!</div>';
+        } else {
+            lb.innerHTML = ranked.map(function(t, i) {
+                return '<div class="recognition-card">' +
+                    '<div class="recognition-rank">' + (medals[i] || '#' + (i+1)) + '</div>' +
+                    '<div class="recognition-info">' +
+                        '<div class="recognition-name">' + t.name + ' <span style="font-size:12px;color:var(--muted);font-weight:400;">(' + t.techId + ')</span></div>' +
+                        '<div class="recognition-detail">' + t.partner + ' · Last recognized ' + formatDate(t.latest) + '</div>' +
+                    '</div>' +
+                    '<div class="recognition-count">' + t.count + ' ⭐</div>' +
+                '</div>';
+            }).join('');
+        }
+    }
+    // Recent submissions
+    var recent = document.getElementById('recognition-recent');
+    if (recent) {
+        var latest = recSubs.slice(0, 8);
+        if (!latest.length) {
+            recent.innerHTML = '<div class="empty-state">No recent recognition submissions.</div>';
+        } else {
+            recent.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:14px;">' +
+                '<thead><tr>' +
+                '<th style="text-align:left;padding:8px;background:#EAFFD6;color:#2A7A00;font-size:12px;border-bottom:2px solid #B8E68A;">Ref #</th>' +
+                '<th style="text-align:left;padding:8px;background:#EAFFD6;color:#2A7A00;font-size:12px;border-bottom:2px solid #B8E68A;">Technician</th>' +
+                '<th style="text-align:left;padding:8px;background:#EAFFD6;color:#2A7A00;font-size:12px;border-bottom:2px solid #B8E68A;">Partner</th>' +
+                '<th style="text-align:left;padding:8px;background:#EAFFD6;color:#2A7A00;font-size:12px;border-bottom:2px solid #B8E68A;">Submitted By</th>' +
+                '<th style="text-align:left;padding:8px;background:#EAFFD6;color:#2A7A00;font-size:12px;border-bottom:2px solid #B8E68A;">Date</th>' +
+                '</tr></thead><tbody>' +
+                latest.map(function(s) {
+                    return '<tr class="clickable-row" onclick="viewDetail(\'' + s.refNumber + '\')" style="border-bottom:1px solid var(--border);">' +
+                        '<td style="padding:8px;font-family:monospace;color:var(--tp);font-weight:700;">🌟 ' + s.refNumber + '</td>' +
+                        '<td style="padding:8px;font-weight:600;">' + s.techName + '</td>' +
+                        '<td style="padding:8px;">' + s.partner + '</td>' +
+                        '<td style="padding:8px;">' + (s.submitterName || '—') + '</td>' +
+                        '<td style="padding:8px;font-size:12px;">' + formatDate(s.submittedAt) + '</td>' +
+                        '</tr>';
+                }).join('') +
+                '</tbody></table>';
+        }
+    }
+}
+// ============================================================
 // UI HELPERS
 // ============================================================
 function showView(name){
@@ -2092,6 +2338,7 @@ function showView(name){
     if(name==='dashboard')updateDashboard();
     if(name==='manage')renderManage();
     if(name==='admin')renderAdmin();
+    if(name==='recognition')renderRecognition();
 }
 function showToast(msg,type){
     var tt=document.createElement('div');
