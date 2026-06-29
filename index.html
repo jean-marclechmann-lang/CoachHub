@@ -520,7 +520,10 @@
 <div class="view" id="view-admin">
     <div class="section-header">
         <div class="section-title" id="admin-title">⚙️ Admin View</div>
-        <span style="font-size:13px;color:var(--muted);background:#F0EBF8;padding:3px 10px;border-radius:20px" id="admin-role-badge">PRM / NPM / GM Access</span>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span style="font-size:13px;color:var(--muted);background:#F0EBF8;padding:3px 10px;border-radius:20px" id="admin-role-badge">PRM / NPM / GM Access</span>
+            <button class="btn-primary" onclick="openAddTechModal()" style="font-size:13px;padding:7px 16px;">➕ Add Technician</button>
+        </div>
     </div>
     <div class="alert info" id="admin-access-note">ℹ️ Click a stat card to filter the table. Click any row to view full details.</div>
     <div class="stats-grid">
@@ -528,6 +531,7 @@
         <div class="stat-card red clickable" id="acard-esc" onclick="setAdminFilter('escalated')"><div class="stat-number" id="a-esc">0</div><div class="stat-label" id="admin-esc-lbl">⚠️ Escalated</div></div>
         <div class="stat-card green clickable" id="acard-comp" onclick="setAdminFilter('completed')"><div class="stat-number" id="a-comp">0</div><div class="stat-label" id="admin-comp-lbl">✅ Completed</div></div>
         <div class="stat-card yellow clickable" id="acard-pend" onclick="setAdminFilter('pending')"><div class="stat-number" id="a-pend">0</div><div class="stat-label" id="admin-pend-lbl">⏳ Pending Action</div></div>
+        <div class="stat-card clickable" id="acard-returned" onclick="setAdminFilter('returned')" style="border-color:#C05000;"><div class="stat-number" id="a-ret" style="color:#C05000;">0</div><div class="stat-label">↩ Returned</div></div>
     </div>
     <div class="card">
         <div class="card-title" id="admin-table-title">🌐 All Submissions — National View</div>
@@ -1150,6 +1154,10 @@ function populateTechResult(tech) {
     document.getElementById('tr-region').textContent=tech.region||'—';
     document.getElementById('tr-manager').textContent=tech.manager||'—';
     document.getElementById('tr-email').textContent=tech.managerEmail||'—';
+    var sourceLabel=document.getElementById('tech-source-label');
+    if(sourceLabel) sourceLabel.innerHTML=tech._demo
+        ? '<span style="background:#4B286D;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700;">⭐ Demo Entry</span>'
+        : 'From Database';
 }
 // ============================================================
 // CATEGORY CLASSIFICATION
@@ -1466,8 +1474,8 @@ function completeSignoff(){
 // ============================================================
 function setAdminFilter(filter){
     adminFilter=filter;adminPage=1;
-    ['acard-all','acard-esc','acard-comp','acard-pend'].forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('active-filter');});
-    var cardMap={all:'acard-all',escalated:'acard-esc',completed:'acard-comp',pending:'acard-pend'};
+    ['acard-all','acard-esc','acard-comp','acard-pend','acard-returned'].forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('active-filter');});
+    var cardMap={all:'acard-all',escalated:'acard-esc',completed:'acard-comp',pending:'acard-pend',returned:'acard-returned'};
     if(cardMap[filter]){var el=document.getElementById(cardMap[filter]);if(el)el.classList.add('active-filter');}
     renderAdmin();
 }
@@ -1476,6 +1484,7 @@ function getAdminFilteredSubmissions(){
     if(adminFilter==='escalated')return base.filter(function(s){return s.escalationLevel>0;});
     if(adminFilter==='completed')return base.filter(function(s){return s.status==='Coaching Completed'||s.status==='Closed';});
     if(adminFilter==='pending')return base.filter(function(s){return s.status!=='Coaching Completed'&&s.status!=='Closed';});
+    if(adminFilter==='returned')return base.filter(function(s){return s.status==='Returned to Submitter';});
     return base;
 }
 function renderAdmin(){
@@ -1506,8 +1515,14 @@ function renderAdmin(){
     }
     var base=getVisibleSubmissions();
     var ids=['a-total','a-esc','a-comp','a-pend'];
-    var vals=[base.length,base.filter(function(s){return s.escalationLevel>0;}).length,base.filter(function(s){return s.status==='Coaching Completed'||s.status==='Closed';}).length,base.filter(function(s){return s.status!=='Coaching Completed'&&s.status!=='Closed';}).length];
+    var vals=[base.length,
+        base.filter(function(s){return s.escalationLevel>0;}).length,
+        base.filter(function(s){return s.status==='Coaching Completed'||s.status==='Closed';}).length,
+        base.filter(function(s){return s.status!=='Coaching Completed'&&s.status!=='Closed';}).length
+    ];
     ids.forEach(function(id,i){var el=document.getElementById(id);if(el)el.textContent=vals[i];});
+    var retEl=document.getElementById('a-ret');
+    if(retEl)retEl.textContent=base.filter(function(s){return s.status==='Returned to Submitter';}).length;
     var pg=document.getElementById('admin-pagination');if(!pg)return;
     pg.innerHTML='';
     for(var p=1;p<=totalPages;p++){
@@ -2258,8 +2273,75 @@ function getCountdownBadge(sub) {
     }
 }
 // ============================================================
-// RECOGNITION WALL
+// ADD TECHNICIAN
 // ============================================================
+function openAddTechModal() {
+    ['at-techid','at-name','at-manager','at-mgr-email','at-l2-manager','at-l2-email'].forEach(function(id){
+        var el=document.getElementById(id); if(el) el.value='';
+    });
+    ['at-partner','at-region'].forEach(function(id){
+        var el=document.getElementById(id); if(el) el.value='';
+    });
+    var err=document.getElementById('at-error');
+    if(err){err.style.display='none';err.textContent='';}
+    document.getElementById('modal-add-tech').classList.add('show');
+}
+function confirmAddTech() {
+    var err=document.getElementById('at-error');
+    var techId=(document.getElementById('at-techid').value||'').trim().toUpperCase();
+    var name=(document.getElementById('at-name').value||'').trim();
+    var partner=(document.getElementById('at-partner').value||'').trim();
+    var region=(document.getElementById('at-region').value||'').trim();
+    var manager=(document.getElementById('at-manager').value||'').trim();
+    var mgrEmail=(document.getElementById('at-mgr-email').value||'').trim();
+    var l2=(document.getElementById('at-l2-manager').value||'').trim();
+    var l2Email=(document.getElementById('at-l2-email').value||'').trim();
+    // Validate
+    if(!techId||!name||!partner||!region||!manager||!mgrEmail||!l2||!l2Email){
+        err.textContent='All fields are required.'; err.style.display='block'; return;
+    }
+    if(TECH_DB[techId]){
+        err.textContent='Tech ID "'+techId+'" already exists in the database.'; err.style.display='block'; return;
+    }
+    // Build record
+    var newTech={
+        techId:techId, name:name, partner:partner, region:region,
+        manager:manager, managerEmail:mgrEmail,
+        managerLevel2:l2, managerLevel2Email:l2Email,
+        _demo:true
+    };
+    // Add to live TECH_DB
+    TECH_DB[techId]=newTech;
+    // Save to localStorage
+    try {
+        var saved=JSON.parse(localStorage.getItem('coachhub_techs')||'{}');
+        saved[techId]=newTech;
+        localStorage.setItem('coachhub_techs', JSON.stringify(saved));
+    } catch(e){}
+    // Attempt backend sync
+    if(backendConnected){
+        fetch(BACKEND_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},
+            body:JSON.stringify({action:'addTechnician',tech:newTech})
+        }).then(function(r){return r.json();})
+        .then(function(result){
+            if(result&&result.success) showToast('✅ '+name+' synced to Google Sheet!','success');
+        }).catch(function(){});
+    }
+    closeModal('modal-add-tech');
+    renderAdmin();
+    showToast('✅ '+name+' ('+techId+') added! Now searchable in Tech Lookup.','success');
+}
+function loadSavedTechs() {
+    try {
+        var saved=JSON.parse(localStorage.getItem('coachhub_techs')||'{}');
+        Object.keys(saved).forEach(function(id){
+            if(!TECH_DB[id]) TECH_DB[id]=saved[id];
+        });
+        if(Object.keys(saved).length>0){
+            console.log('CoachHub+: Loaded '+Object.keys(saved).length+' saved tech(s) from localStorage');
+        }
+    } catch(e){}
+}
 function renderRecognition() {
     var recSubs = getVisibleSubmissions().filter(function(s) {
         return s.categories && s.categories.indexOf('recognition') >= 0;
@@ -2286,7 +2368,8 @@ function renderRecognition() {
             lb.innerHTML = '<div class="empty-state">No recognition submissions yet. Be the first to celebrate a great technician!</div>';
         } else {
             lb.innerHTML = ranked.map(function(t, i) {
-                return '<div class="recognition-card">' +
+                var latestSub = recSubs.filter(function(s){return s.techId===t.techId;}).sort(function(a,b){return new Date(b.submittedAt)-new Date(a.submittedAt);})[0];
+                return '<div class="recognition-card" style="cursor:pointer;" onclick="'+(latestSub?'viewDetail(\''+latestSub.refNumber+'\')':'')+'">' +
                     '<div class="recognition-rank">' + (medals[i] || '#' + (i+1)) + '</div>' +
                     '<div class="recognition-info">' +
                         '<div class="recognition-name">' + t.name + ' <span style="font-size:12px;color:var(--muted);font-weight:400;">(' + t.techId + ')</span></div>' +
@@ -2370,6 +2453,7 @@ function formatDate(isoString){
 // ============================================================
 document.getElementById('sub-date').value = new Date().toISOString().split('T')[0];
 window.addEventListener('load', function() {
+    loadSavedTechs();
     GAS_ENVIRONMENT = (typeof google !== 'undefined' && typeof google.script !== 'undefined');
     // Detect language: check saved pref, then browser language
     function initLang() {
@@ -2428,6 +2512,73 @@ window.addEventListener('load', function() {
         <div class="btn-row">
             <button class="btn-secondary" onclick="closeModal('modal-return')">Cancel</button>
             <button class="btn-primary" onclick="confirmReturn()" style="background:linear-gradient(135deg,#C05000,#E07B00);">↩ Confirm Return</button>
+        </div>
+    </div>
+</div>
+<div class="modal-overlay" id="modal-add-tech">
+    <div class="modal" style="max-width:560px;">
+        <div class="modal-header">
+            <div class="modal-title">➕ Add Technician to Database</div>
+            <button class="modal-close" onclick="closeModal('modal-add-tech')">✕</button>
+        </div>
+        <div class="alert info" style="margin-bottom:16px;font-size:13px;">
+            ℹ️ Technician will be available for lookup immediately. Data saves to local storage and will sync to Google Sheet when backend is connected.
+        </div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Tech ID * <span style="font-size:11px;color:var(--muted);font-weight:400;">(e.g. T12345)</span></label>
+                <input type="text" id="at-techid" placeholder="T12345" style="text-transform:uppercase;"/>
+            </div>
+            <div class="form-group">
+                <label>Full Name *</label>
+                <input type="text" id="at-name" placeholder="First Last"/>
+            </div>
+            <div class="form-group">
+                <label>Partner *</label>
+                <select id="at-partner">
+                    <option value="">— Select —</option>
+                    <option>TELUS HT</option>
+                    <option>ACTIVO</option>
+                    <option>AFL</option>
+                    <option>AECON</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Region *</label>
+                <select id="at-region">
+                    <option value="">— Select —</option>
+                    <option>BC Lower Mainland</option><option>BC Interior</option>
+                    <option>BC Island</option><option>BC North</option>
+                    <option>Alberta Calgary</option><option>Alberta Edmonton</option>
+                    <option>Alberta Red Deer</option><option>Saskatchewan</option>
+                    <option>Manitoba</option><option>Ontario GTA</option>
+                    <option>Ontario West</option><option>Ontario East</option>
+                    <option>Ontario North</option><option>Quebec Montreal</option>
+                    <option>Quebec City</option><option>Nova Scotia</option>
+                    <option>New Brunswick</option><option>PEI</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Manager Name *</label>
+                <input type="text" id="at-manager" placeholder="Manager Full Name"/>
+            </div>
+            <div class="form-group">
+                <label>Manager Email *</label>
+                <input type="email" id="at-mgr-email" placeholder="manager@telus.com"/>
+            </div>
+            <div class="form-group">
+                <label>L2 Manager Name *</label>
+                <input type="text" id="at-l2-manager" placeholder="L2 Manager Full Name"/>
+            </div>
+            <div class="form-group">
+                <label>L2 Manager Email *</label>
+                <input type="email" id="at-l2-email" placeholder="l2manager@telus.com"/>
+            </div>
+        </div>
+        <div id="at-error" style="display:none;" class="alert error"></div>
+        <div class="btn-row" style="margin-top:16px;">
+            <button class="btn-secondary" onclick="closeModal('modal-add-tech')">Cancel</button>
+            <button class="btn-primary" onclick="confirmAddTech()">💾 Save Technician</button>
         </div>
     </div>
 </div>
