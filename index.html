@@ -141,10 +141,7 @@
         .backend-status.disconnected{background:#FFE8EC;color:#9B0000;}
         .backend-status.checking{background:#FFF5E0;color:#856404;}
         .email-preview{background:#F8F8F8;border:1px solid #DDD;border-radius:8px;padding:14px;font-size:13px;margin-bottom:8px;font-family:monospace;line-height:1.6;}
-        .map-card{background:var(--card);border-radius:10px;border:1px solid var(--border);padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:12px;}
-        .map-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:12px;}
-        .map-legend-item{display:flex;align-items:center;gap:6px;}
-        .map-legend-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
+
         .admin-table-scroll{overflow-y:auto;max-height:520px;}
         .admin-table-scroll::-webkit-scrollbar{width:6px;}
         .admin-table-scroll::-webkit-scrollbar-track{background:#F4F2F8;}
@@ -405,30 +402,7 @@
         <div class="stat-card orange"><div class="stat-number" id="s-risk">0</div><div class="stat-label" id="stat-risk-lbl">🚨 At Risk</div></div>
         <div class="stat-card"><div class="stat-number" id="s-avg">—</div><div class="stat-label" id="stat-avg-lbl">⏱ Avg Resp (hrs)</div></div>
     </div>
-   <div class="card" style="margin-bottom:12px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-        <div class="card-title" style="margin-bottom:0;">🗺️ CCTS &amp; Damage Incidents — Geographic View</div>
-        <div id="map-counts"></div>
-    </div>
-    <div style="position:relative;width:100%;border-radius:8px;overflow:hidden;" id="map-wrapper">
-        <div id="map-tooltip" style="position:absolute;background:rgba(26,13,46,0.97);color:#fff;padding:12px 16px;border-radius:10px;font-size:12px;pointer-events:none;z-index:20;display:none;min-width:220px;box-shadow:0 6px 20px rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);">
-            <div id="tt-ref" style="font-family:monospace;font-size:14px;font-weight:900;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.2);"></div>
-            <div style="font-size:11px;margin-top:4px;display:flex;justify-content:space-between;gap:12px;"><span style="opacity:0.65;">Tech:</span><span id="tt-tech" style="font-weight:700;"></span></div>
-            <div style="font-size:11px;margin-top:4px;display:flex;justify-content:space-between;gap:12px;"><span style="opacity:0.65;">Company:</span><span id="tt-company" style="font-weight:700;"></span></div>
-            <div style="font-size:11px;margin-top:4px;display:flex;justify-content:space-between;gap:12px;"><span style="opacity:0.65;">Region:</span><span id="tt-region" style="font-weight:700;"></span></div>
-            <div style="font-size:11px;margin-top:4px;display:flex;justify-content:space-between;gap:12px;"><span style="opacity:0.65;">Status:</span><span id="tt-status" style="font-weight:700;"></span></div>
-            <div style="font-size:11px;margin-top:4px;display:flex;justify-content:space-between;gap:12px;"><span style="opacity:0.65;">Flags:</span><span id="tt-flags" style="font-weight:700;"></span></div>
-            <div style="font-size:10px;opacity:0.5;margin-top:8px;text-align:center;font-style:italic;">Click to open full record →</div>
-        </div>
-        <canvas id="canada-map-canvas" style="display:block;width:100%;height:auto;"></canvas>
-    </div>
-    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:12px;align-items:center;">
-        <div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;border-radius:50%;background:#D0021B;border:2px solid rgba(0,0,0,0.2);"></div><span>⚠️ CCTS Complaint</span></div>
-        <div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;border-radius:50%;background:#C05000;border:2px solid rgba(0,0,0,0.2);"></div><span>🔨 Damage Report</span></div>
-        <div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;border-radius:50%;background:#8B0080;border:2px solid rgba(0,0,0,0.2);"></div><span>⚠️🔨 Both Flags</span></div>
-        <div style="margin-left:auto;font-size:11px;color:var(--muted);">Hover for details - Click to open record</div>
-    </div>
-</div>
+
     <div class="card" style="margin-bottom:10px">
         <div class="card-title" id="at-risk-title">🚨 At-Risk Submissions <span style="font-size:12px;font-weight:400;color:var(--muted)" id="click-to-view">(click any item to view)</span></div>
         <div id="risk-list"></div>
@@ -605,7 +579,7 @@ var TRANSLATIONS = {
         stat_p1_lbl:'🔴 P1 Same Day', stat_p2_lbl:'🟡 P2 48 Hours', stat_p3_lbl:'🟢 P3 72 Hours',
         stat_total_lbl:'Total Active', stat_comp_lbl:'✅ Completed', stat_esc_lbl:'⚠️ Escalated',
         stat_risk_lbl:'🚨 At Risk', stat_avg_lbl:'⏱ Avg Resp (hrs)',
-        map_title:'🗺️ Submission Activity — Canada Geographic View', map_bubble_note:'Bubble size = volume',
+
         at_risk_title:'🚨 At-Risk Submissions', click_to_view:'(click any item to view)',
         chart_priority_title:'📈 By Priority', chart_status_title:'📊 Status Distribution',
         chart_response_title:'⏱ Avg Response (hrs)', chart_ccts_title:'🔄 CCTS Risk by Partner',
@@ -695,7 +669,7 @@ var TRANSLATIONS = {
         stat_p1_lbl:'🔴 P1 Jour même', stat_p2_lbl:'🟡 P2 48 heures', stat_p3_lbl:'🟢 P3 72 heures',
         stat_total_lbl:'Total actif', stat_comp_lbl:'✅ Complété', stat_esc_lbl:'⚠️ Escaladé',
         stat_risk_lbl:'🚨 À risque', stat_avg_lbl:'⏱ Rép. moy. (h)',
-        map_title:'🗺️ Activité des soumissions — Vue géographique du Canada', map_bubble_note:'Taille de la bulle = volume',
+
         at_risk_title:'🚨 Soumissions à risque', click_to_view:'(cliquez pour voir)',
         chart_priority_title:'📈 Par priorité', chart_status_title:'📊 Distribution des statuts',
         chart_response_title:'⏱ Rép. moy. (h)', chart_ccts_title:'🔄 Risque CCTS par partenaire',
@@ -781,7 +755,7 @@ function applyTranslations() {
         'stat-p1-lbl':'stat_p1_lbl','stat-p2-lbl':'stat_p2_lbl','stat-p3-lbl':'stat_p3_lbl',
         'stat-total-lbl':'stat_total_lbl','stat-comp-lbl':'stat_comp_lbl','stat-esc-lbl':'stat_esc_lbl',
         'stat-risk-lbl':'stat_risk_lbl','stat-avg-lbl':'stat_avg_lbl',
-        'map-title':'map_title','map-bubble-note':'map_bubble_note',
+
         'at-risk-title':'at_risk_title','click-to-view':'click_to_view',
         'chart-priority-title':'chart_priority_title','chart-status-title':'chart_status_title',
         'chart-response-title':'chart_response_title','chart-ccts-title':'chart_ccts_title',
@@ -860,14 +834,7 @@ var PAGE_SIZE = 20;
 var MANAGER_L2 = {'TELUS HT':'David Park','ACTIVO':'Jean-Marc Lechmann','AFL':'Sandra Kowalczyk','AECON':'Rachel Adams'};
 var MANAGER_L2_EMAIL = {'TELUS HT':'david.park@telus.com','ACTIVO':'Jean-Marc.Lechmann@telus.com','AFL':'sandra.kowalczyk@telus.com','AECON':'rachel.adams@telus.com'};
 var PARTNER_COLORS = {'TELUS HT':'#4B286D','ACTIVO':'#1A56DB','AFL':'#3A7A00','AECON':'#C05621'};
-var REGION_COORDS = {
-    'BC Lower Mainland':{x:108,y:258},'BC Interior':{x:130,y:230},'BC Island':{x:95,y:255},'BC North':{x:125,y:195},
-    'Alberta Calgary':{x:178,y:255},'Alberta Edmonton':{x:178,y:232},'Alberta Red Deer':{x:178,y:244},
-    'Saskatchewan':{x:222,y:248},'Manitoba':{x:268,y:248},
-    'Ontario GTA':{x:360,y:290},'Ontario West':{x:335,y:292},'Ontario East':{x:385,y:278},'Ontario North':{x:355,y:260},
-    'Quebec Montreal':{x:415,y:278},'Quebec City':{x:435,y:265},
-    'Nova Scotia':{x:490,y:285},'New Brunswick':{x:468,y:278},'PEI':{x:480,y:270}
-};
+
 var TECH_DB = {
     'T98765':{name:'Jordan Mitchell',techId:'T98765',partner:'TELUS HT',region:'BC Lower Mainland',manager:'Sarah Chen',managerEmail:'sarah.chen@telus.com',managerLevel2:'David Park',managerLevel2Email:'david.park@telus.com'},
     'T11234':{name:'Alex Tremblay',techId:'T11234',partner:'AECON',region:'Ontario East',manager:'Lisa Nguyen',managerEmail:'lisa.nguyen@telus.com',managerLevel2:'Rachel Adams',managerLevel2Email:'rachel.adams@telus.com'},
@@ -1459,7 +1426,7 @@ function updateDashboard(){
     renderPartnerGrades(base);
     renderManagerRanking(base);
     renderDashboardP1(active.filter(function(s){return s.priority===1;}).slice(0,6));
-    renderCanadaMap(base);
+
 }
 function renderRiskList(atRisk){
     var el=document.getElementById('risk-list');if(!el)return;
@@ -1497,90 +1464,7 @@ function renderCharts(subs,now){
     var ctx5=document.getElementById('chart-ccts');
     if(ctx5){if(charts['ccts'])charts['ccts'].destroy();charts['ccts']=new Chart(ctx5,{type:'bar',data:{labels:PARTNERS,datasets:[{label:'CCTS',data:PARTNERS.map(function(p){return subs.filter(function(s){return s.partner===p&&s.ccts;}).length;}),backgroundColor:'#D0021B',borderRadius:4}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{font:{size:9}}},x:{ticks:{font:{size:9}}}}}});}
 }
-// ============================================================
-// CANADA MAP
-// ============================================================
-function renderCanadaMap(subs){
-    var canvas=document.getElementById('canada-map-canvas');
-    if(!canvas)return;
-    var ctx=canvas.getContext('2d');
-    var W=canvas.width,H=canvas.height;
-    ctx.clearRect(0,0,W,H);
-    ctx.fillStyle='#E8F4FD';
-    ctx.fillRect(0,0,W,H);
-    ctx.fillStyle='#F0EBF8';
-    ctx.strokeStyle='#C8B8E0';
-    ctx.lineWidth=1.5;
-    ctx.beginPath();
-    ctx.moveTo(80,310);ctx.lineTo(75,290);ctx.lineTo(85,265);ctx.lineTo(95,255);
-    ctx.lineTo(100,240);ctx.lineTo(110,220);ctx.lineTo(115,200);ctx.lineTo(120,180);
-    ctx.lineTo(140,165);ctx.lineTo(170,155);ctx.lineTo(210,150);ctx.lineTo(250,148);
-    ctx.lineTo(290,145);ctx.lineTo(330,148);ctx.lineTo(370,150);ctx.lineTo(400,155);
-    ctx.lineTo(430,160);ctx.lineTo(455,168);ctx.lineTo(470,175);
-    ctx.lineTo(480,195);ctx.lineTo(490,215);ctx.lineTo(495,235);ctx.lineTo(492,255);
-    ctx.lineTo(488,268);ctx.lineTo(480,278);ctx.lineTo(472,282);ctx.lineTo(465,285);
-    ctx.lineTo(455,288);ctx.lineTo(445,285);ctx.lineTo(435,280);
-    ctx.lineTo(425,285);ctx.lineTo(415,290);ctx.lineTo(405,295);ctx.lineTo(395,298);
-    ctx.lineTo(380,300);ctx.lineTo(365,302);ctx.lineTo(350,305);
-    ctx.lineTo(340,308);ctx.lineTo(330,312);ctx.lineTo(320,315);ctx.lineTo(310,318);
-    ctx.lineTo(290,320);ctx.lineTo(260,320);ctx.lineTo(230,320);ctx.lineTo(200,320);
-    ctx.lineTo(170,320);ctx.lineTo(150,318);ctx.lineTo(130,315);ctx.lineTo(110,312);
-    ctx.lineTo(90,310);ctx.closePath();
-    ctx.fill();ctx.stroke();
-    ctx.strokeStyle='#B8A8D0';ctx.lineWidth=1;ctx.setLineDash([3,3]);
-    [[155,165,155,320],[200,155,200,320],[245,150,245,320],[290,148,290,320],[395,155,380,300]].forEach(function(l){
-        ctx.beginPath();ctx.moveTo(l[0],l[1]);ctx.lineTo(l[2],l[3]);ctx.stroke();
-    });
-    ctx.setLineDash([]);
-    ctx.fillStyle='rgba(75,40,109,0.5)';ctx.font='bold 10px Segoe UI';ctx.textAlign='center';
-    [['BC',120,270],['AB',175,275],['SK',222,275],['MB',265,275],['ON',340,275],['QC',420,270],['NS',488,290],['NB',468,290]].forEach(function(pl){
-        ctx.fillText(pl[0],pl[1],pl[2]);
-    });
-    var regionCounts={};
-    subs.forEach(function(s){
-        if(!s.region)return;
-        if(!regionCounts[s.region])regionCounts[s.region]={total:0,byPartner:{}};
-        regionCounts[s.region].total++;
-        regionCounts[s.region].byPartner[s.partner]=(regionCounts[s.region].byPartner[s.partner]||0)+1;
-    });
-    Object.keys(regionCounts).forEach(function(region){
-        var coord=REGION_COORDS[region];if(!coord)return;
-        var count=regionCounts[region].total;
-        var radius=Math.max(8,Math.min(28,6+Math.sqrt(count)*2.5));
-        var bp=regionCounts[region].byPartner;
-        var domPartner=Object.keys(bp).sort(function(a,b){return bp[b]-bp[a];})[0];
-        var color=PARTNER_COLORS[domPartner]||'#4B286D';
-        ctx.beginPath();ctx.arc(coord.x,coord.y,radius*1.6,0,Math.PI*2);
-        ctx.fillStyle=color+'33';ctx.fill();
-        ctx.beginPath();ctx.arc(coord.x,coord.y,radius,0,Math.PI*2);
-        ctx.fillStyle=color+'CC';ctx.fill();
-        ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();
-        ctx.fillStyle='#fff';ctx.font='bold '+(count>99?8:count>9?9:10)+'px Segoe UI';
-        ctx.textAlign='center';ctx.textBaseline='middle';
-        ctx.fillText(count>99?'99+':String(count),coord.x,coord.y);
-        ctx.textBaseline='alphabetic';
-        ctx.fillStyle='rgba(42,21,64,0.8)';ctx.font='8px Segoe UI';ctx.textAlign='center';
-        var shortName=region.replace('BC ','').replace('Alberta ','').replace('Ontario ','').replace('Quebec ','');
-        ctx.fillText(shortName,coord.x,coord.y+radius+9);
-    });
-    var lx=10,ly=H-90;
-    ctx.fillStyle='rgba(255,255,255,0.9)';
-    ctx.strokeStyle='#E0D9EC';ctx.lineWidth=1;
-    ctx.beginPath();
-    if(ctx.roundRect)ctx.roundRect(lx,ly,145,78,6);
-    else ctx.rect(lx,ly,145,78);
-    ctx.fill();ctx.stroke();
-    ctx.fillStyle='#4B286D';ctx.font='bold 10px Segoe UI';ctx.textAlign='left';
-    ctx.fillText(currentLang==='fr'?'Partenaire (dominant)':'Partner (dominant)',lx+8,ly+14);
-    var li=0;
-    Object.keys(PARTNER_COLORS).forEach(function(p){
-        ctx.beginPath();ctx.arc(lx+14,ly+26+li*14,5,0,Math.PI*2);
-        ctx.fillStyle=PARTNER_COLORS[p];ctx.fill();
-        ctx.fillStyle='#2C2C2C';ctx.font='9px Segoe UI';
-        ctx.fillText(p,lx+24,ly+30+li*14);
-        li++;
-    });
-}
+
 function calcGrade(subs){
     if(!subs.length)return{grade:'N/A',score:0,responseScore:0,noteScore:0,escRate:0};
     var completed=subs.filter(function(s){return s.status==='Coaching Completed'||s.status==='Closed';});
