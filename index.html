@@ -46,6 +46,10 @@
         .status-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:12px;font-weight:600}
         .status-submitted{background:#E8F0FF;color:#1A56DB}.status-received{background:#FFF3CD;color:#856404}.status-review{background:#E8F0FF;color:#1A56DB}.status-scheduled{background:#FFF0E6;color:#C05621}.status-completed{background:#EAFFD6;color:#3A7A00}.status-closed{background:#F0F0F0;color:#555}
         .status-returned{background:#FFF0E0;color:#C05000;border:1.5px solid #C05000;font-weight:700;}
+        .resub-badge{display:inline-flex;align-items:center;gap:4px;background:#E8F0FF;color:#1A56DB;border:1px solid #B3C9FF;border-radius:12px;padding:2px 8px;font-size:11px;font-weight:700;}
+        .resub-chain{background:linear-gradient(135deg,#E8F0FF,#EEF3FF);border:1.5px solid #1A56DB;border-left:5px solid #1A56DB;border-radius:8px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+        .resub-chain-label{font-size:12px;font-weight:700;color:#1A56DB;}
+        .resub-chain-btn{background:#1A56DB;color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;}
         .returned-section{background:linear-gradient(135deg,#FFF5E0,#FFEDD0);border:2px solid #C05000;border-left:6px solid #C05000;border-radius:10px;padding:16px 18px;margin-bottom:16px;}
         .returned-section-title{font-size:16px;font-weight:800;color:#7A3500;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
         .returned-item{background:#fff;border:1.5px solid #C05000;border-radius:8px;padding:12px 14px;margin-bottom:10px;display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;}
@@ -1360,6 +1364,27 @@ function submitFeedback(){
     }
 }
 function finishSubmission(sub){
+    // Handle resubmission chain linking
+    if (window._resubmittingFrom) {
+        var originalRef = window._resubmittingFrom;
+        var existingR = originalRef.match(/-R(\d+)$/);
+        var newSuffix = existingR ? '-R' + (parseInt(existingR[1]) + 1) : '-R1';
+        var baseRef = originalRef.replace(/-R\d+$/, '');
+        sub.refNumber = baseRef + newSuffix;
+        sub._resubmissionOf = originalRef;
+        // Update the original returned submission to link forward
+        var originalSub = submissions.find(function(s){ return s.refNumber === originalRef; });
+        if (originalSub) {
+            originalSub._resubmittedAs = sub.refNumber;
+            originalSub.statusHistory = originalSub.statusHistory || [];
+            originalSub.statusHistory.push({
+                status: originalSub.status,
+                time: new Date().toISOString(),
+                note: '📎 Resubmitted as ' + sub.refNumber + ' by ' + (sub.submitterName || sub.submitterEmail || 'submitter')
+            });
+        }
+        window._resubmittingFrom = null;
+    }
     submissions.unshift(sub);
     lastSubmittedRef=sub.refNumber;
     document.getElementById('success-ref').textContent=sub.refNumber;
@@ -1401,7 +1426,30 @@ function trackSub(){
     if(!sub){resultEl.style.display='none';showToast(t('toast_ref_not_found'),'warning');return;}
     resultEl.style.display='block';
     var info=PRIORITY_INFO[sub.priority];
-    document.getElementById('track-ref-title').innerHTML=sub.refNumber+' — '+sub.techName+' <span class="priority-badge priority-'+sub.priority+'" style="margin-left:8px">'+info.label+'</span>';
+    // Chain banner in track view
+    var trackChain = '';
+    var isResubTrack = sub.refNumber.match(/-R(\d+)$/);
+    var origRefTrack = isResubTrack ? sub.refNumber.replace(/-R\d+$/, '') : null;
+    var origSubTrack = origRefTrack ? submissions.find(function(s){ return s.refNumber === origRefTrack; }) : null;
+    var resubMatchTrack = submissions.find(function(s){ return s.refNumber && s.refNumber.startsWith(sub.refNumber.replace(/-R\d+$/,'')) && s.refNumber !== sub.refNumber && s.refNumber.match(/-R\d+$/); });
+    if (origSubTrack) {
+        trackChain = '<div class="resub-chain" style="margin-bottom:12px;">'+
+            '<span style="font-size:18px;">📎</span>'+
+            '<div style="flex:1"><div class="resub-chain-label">Re-submission of '+origRefTrack+'</div>'+
+            '<div style="font-size:12px;color:#1A56DB;margin-top:2px;">Original returned — Reason: '+(origSubTrack.returnReason||'see original')+'</div></div>'+
+            '<button class="resub-chain-btn" onclick="document.getElementById(\'track-input\').value=\''+origRefTrack+'\';trackSub();">View Original →</button>'+
+            '</div>';
+    }
+    if (resubMatchTrack && resubMatchTrack.refNumber !== sub.refNumber) {
+        trackChain += '<div class="resub-chain" style="background:linear-gradient(135deg,#EAFFD6,#F0FFE8);border-color:#66CC00;border-left-color:#66CC00;margin-bottom:12px;">'+
+            '<span style="font-size:18px;">🔄</span>'+
+            '<div style="flex:1"><div class="resub-chain-label" style="color:#3A7A00;">Resubmitted as '+resubMatchTrack.refNumber+'</div>'+
+            '<div style="font-size:12px;color:#3A7A00;">'+formatDate(resubMatchTrack.submittedAt)+'</div></div>'+
+            '<button class="resub-chain-btn" style="background:#3A7A00;" onclick="document.getElementById(\'track-input\').value=\''+resubMatchTrack.refNumber+'\';trackSub();">View Resubmission →</button>'+
+            '</div>';
+    }
+    document.getElementById('track-ref-title').innerHTML = (trackChain ? trackChain : '') +
+        sub.refNumber+' — '+sub.techName+' <span class="priority-badge priority-'+sub.priority+'" style="margin-left:8px">'+info.label+'</span>';
     var dh='<div><div style="font-size:12px;color:var(--muted)">TECHNICIAN</div><div style="font-weight:600">'+sub.techName+' ('+sub.techId+')</div></div>'+
         '<div><div style="font-size:12px;color:var(--muted)">WORK ORDER</div><div style="font-weight:600">'+sub.woNumber+'</div></div>'+
         '<div><div style="font-size:12px;color:var(--muted)">MANAGER</div><div style="font-weight:600">'+sub.manager+'</div></div>'+
@@ -1446,6 +1494,7 @@ function renderManage(){
         tb.innerHTML=paginated.map(function(s){
             return '<tr class="clickable-row" onclick="viewDetail(\''+s.refNumber+'\')">' +
                 '<td><strong style="font-family:monospace;color:var(--tp);font-size:13px">'+s.refNumber+'</strong>'+
+                (s.refNumber.match(/-R\d+$/)?'<div style="margin-top:2px"><span class="resub-badge">📎 Re-submission</span></div>':'')+
                 (s.priority===1&&s.status!=='Coaching Completed'&&s.status!=='Closed'?'<div style="margin-top:3px">'+getCountdownBadge(s)+'</div>':'')+
                 (s.ccts?'<span style="color:var(--pr);font-size:11px;display:block">⚠️CCTS'+(s.cctsCaseNumber?' #'+s.cctsCaseNumber:'')+'</span>':'')+
                 (s.damage?'<span style="color:#7A3500;font-size:11px;display:block">🔨DMG</span>':'')+
@@ -1795,7 +1844,35 @@ function viewDetail(ref){
         var diffHours=Math.round((scheduled-submitted)/3600000);
         if(diffHours>0){var days=Math.floor(diffHours/24);var hrs=diffHours%24;timeToCoaching=(days>0?days+'d ':'')+(hrs>0?hrs+'h':'');}
     }
-    var body='<div class="modal-section"><h4>Technician</h4><p>'+sub.techName+' ('+sub.techId+') — '+sub.partner+', '+sub.region+'</p></div>'+
+    var body='';
+    // ── Resubmission chain banner ──
+    var isResub = sub.refNumber.match(/-R(\d+)$/);
+    var originalRef = isResub ? sub.refNumber.replace(/-R\d+$/, '') : null;
+    var originalSub = originalRef ? submissions.find(function(s){ return s.refNumber === originalRef; }) : null;
+    var resubRef = sub.refNumber + '-R1';
+    var resubMatch = submissions.find(function(s){ return s.refNumber === resubRef; });
+    // Also check for R2, R3 etc if R1 has been further resubmitted
+    if (!resubMatch) {
+        var r1 = sub.refNumber + '-R1';
+        resubMatch = submissions.find(function(s){ return s.refNumber && s.refNumber.startsWith(sub.refNumber + '-R'); });
+    }
+    if (originalSub) {
+        body += '<div class="resub-chain">'+
+            '<span style="font-size:18px;">📎</span>'+
+            '<div style="flex:1"><div class="resub-chain-label">Re-submission of '+originalRef+'</div>'+
+            '<div style="font-size:12px;color:#1A56DB;margin-top:2px;">Original was returned — Reason: '+(originalSub.returnReason||'See original record')+'</div></div>'+
+            '<button class="resub-chain-btn" onclick="viewDetail(\''+originalRef+'\')">View Original →</button>'+
+            '</div>';
+    }
+    if (resubMatch) {
+        body += '<div class="resub-chain" style="background:linear-gradient(135deg,#EAFFD6,#F0FFE8);border-color:#66CC00;border-left-color:#66CC00;">'+
+            '<span style="font-size:18px;">🔄</span>'+
+            '<div style="flex:1"><div class="resub-chain-label" style="color:#3A7A00;">Resubmitted as '+resubMatch.refNumber+'</div>'+
+            '<div style="font-size:12px;color:#3A7A00;margin-top:2px;">Submitter corrected and resubmitted — '+formatDate(resubMatch.submittedAt)+'</div></div>'+
+            '<button class="resub-chain-btn" style="background:#3A7A00;" onclick="viewDetail(\''+resubMatch.refNumber+'\')">View Resubmission →</button>'+
+            '</div>';
+    }
+    body+='<div class="modal-section"><h4>Technician</h4><p>'+sub.techName+' ('+sub.techId+') — '+sub.partner+', '+sub.region+'</p></div>'+
         '<div class="modal-section"><h4>Manager</h4><p>'+sub.manager+' — '+sub.managerEmail+'</p></div>'+
         '<div class="modal-section"><h4>Submitted By</h4><p>'+(sub.submitterName||'—')+' ('+(sub.submitterId||'—')+') — '+(sub.submitterRole||'—')+(sub.submitterEmail?' | '+sub.submitterEmail:'')+'</p></div>'+
         '<div class="modal-section"><h4>Work Order</h4><p>'+sub.woNumber+' | Date: '+sub.interactionDate+'</p></div>'+
@@ -1957,11 +2034,13 @@ function resubmitFromReturn(ref) {
         // Mark as resubmission with suffix
         var resubNote = document.getElementById('submit-mode-note');
         if (resubNote) {
-            var suffix = ref.match(/-R(\d+)$/) ? '-R' + (parseInt(ref.match(/-R(\d+)$/)[1]) + 1) : '-R1';
+            var existingR = ref.match(/-R(\d+)$/);
+            var newSuffix = existingR ? '-R' + (parseInt(existingR[1]) + 1) : '-R1';
+            var newRef = ref.replace(/-R\d+$/, '') + newSuffix;
             resubNote.className = 'alert warning';
-            resubNote.innerHTML = '↩ <strong>Resubmission of ' + ref + '</strong> — Your new reference will be <strong>' + ref.replace(/-R\d+$/, '') + suffix + '</strong>. Please correct any issues and resubmit.';
+            resubNote.innerHTML = '📎 <strong>Re-submission of ' + ref + '</strong> — Your new reference will be <strong>' + newRef + '</strong>. Please correct the issues noted by the manager and resubmit.';
         }
-        // Store original ref for tracking
+        // Store original ref for tracking on submit
         window._resubmittingFrom = ref;
         showToast('Form pre-filled from returned submission ' + ref, 'info');
     }, 150);
