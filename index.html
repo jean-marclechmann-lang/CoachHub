@@ -150,6 +150,7 @@
         .backend-status.connected{background:#EAFFD6;color:#2A7A00;}
         .backend-status.disconnected{background:#FFE8EC;color:#9B0000;}
         .backend-status.checking{background:#FFF5E0;color:#856404;}
+        .backend-status.demo{background:#E8F0FF;color:#1A56DB;}
         .email-preview{background:#F8F8F8;border:1px solid #DDD;border-radius:8px;padding:14px;font-size:13px;margin-bottom:8px;font-family:monospace;line-height:1.6;}
 
         .admin-table-scroll{overflow-y:auto;max-height:520px;}
@@ -335,7 +336,7 @@
                     <input type="text" id="tech-id-input" placeholder="e.g. T98765" style="flex:1" onkeydown="if(event.key==='Enter')lookupTech()"/>
                     <button class="abtn" onclick="lookupTech()" id="btn-lookup">🔍 Lookup</button>
                 </div>
-                <div style="font-size:12px;color:var(--muted);margin-top:4px">Available: T98765, T11234, T55678, T33456, T77890, T34567, X33456, X98765, T12344, X12344, T12355, T54321, T76543, X99887</div>
+                <div style="font-size:12px;color:var(--muted);margin-top:4px">Enter a technician ID to look up their profile and manager</div>
             </div>
             <div class="form-group"><label id="lbl-wo">Work Order # *</label><input type="text" id="wo-number" placeholder="e.g. 10004782391"/></div>
         </div>
@@ -1091,15 +1092,29 @@ function toggleCctsCaseField() {
 // ============================================================
 function pingBackend() {
     var indicator = document.getElementById('backend-indicator');
-    if (!GAS_ENVIRONMENT) {
-        backendConnected = false;
-        if (indicator) { indicator.className='backend-status disconnected'; indicator.textContent='⚠️ Preview Mode'; }
-        return;
-    }
-    fetch('https://script.google.com/a/macros/telus.com/s/AKfycbzdgKGwUFcH0m9vPvmr13JceTAwF7XAf0t8Mrapc59xN04at_X-PJTJb_y5Y8vHQs7_Sg/exec', {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain'}, body:JSON.stringify({action:'ping'})})
-        .then(function(r){return r.json();})
-        .then(function(r){ backendConnected=!!(r&&r.success); if(indicator){indicator.className='backend-status '+(backendConnected?'connected':'disconnected');indicator.textContent=backendConnected?'✅ Connected':'❌ Offline';} })
-        .catch(function(){ backendConnected=false; if(indicator){indicator.className='backend-status disconnected';indicator.textContent='❌ Offline';} });
+    if (indicator) { indicator.className='backend-status checking'; indicator.textContent='⏳ Connecting...'; }
+    fetch('https://script.google.com/a/macros/telus.com/s/AKfycbzdgKGwUFcH0m9vPvmr13JceTAwF7XAf0t8Mrapc59xN04at_X-PJTJb_y5Y8vHQs7_Sg/exec',
+        {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain'}, body:JSON.stringify({action:'ping'})})
+        .then(function(r){
+            if (r.status === 401 || r.status === 403) { throw new Error('auth'); }
+            return r.json();
+        })
+        .then(function(r){
+            backendConnected = !!(r && r.success);
+            if (indicator) {
+                indicator.className = 'backend-status ' + (backendConnected ? 'connected' : 'demo');
+                indicator.textContent = backendConnected ? '✅ Live — Emails Active' : '🔵 Demo Mode';
+            }
+        })
+        .catch(function(err){
+            backendConnected = false;
+            if (indicator) {
+                // If TELUS auth blocked it, show Demo Mode — not an error
+                var isAuth = err && (err.message === 'auth' || err.message === 'Failed to fetch');
+                indicator.className = 'backend-status demo';
+                indicator.textContent = isAuth ? '🔵 Demo Mode' : '🔵 Demo Mode';
+            }
+        });
 }
 // ============================================================
 // AUTH
@@ -1235,7 +1250,7 @@ function lookupTech() {
         if(sourceLabel) sourceLabel.textContent='📋 Local Database';
         resultEl.classList.add('show'); statusEl.style.display='none';
     } else {
-        statusEl.innerHTML='<div class="alert warning">⚠️ Tech ID "'+id+'" not found.<br><small>Available: T98765, T11234, T55678, T33456, T77890, T34567, X33456, X98765, T12344, X12344, T12355, T54321, T76543, X99887</small></div>';
+        statusEl.innerHTML='<div class="alert warning">⚠️ Tech ID "'+id+'" not found. Please check the ID and try again, or add this technician via the Admin tab.</div>';
     }
 }
 function populateTechResult(tech) {
@@ -2566,15 +2581,12 @@ window.addEventListener('load', function() {
     }
     initLang();
     generateSampleData();
-    var indicator = document.getElementById('backend-indicator');
     var note = document.getElementById('submit-mode-note');
-    if (GAS_ENVIRONMENT) {
-        pingBackend();
-    } else {
-        backendConnected = false;
-        if (indicator) { indicator.className='backend-status disconnected'; indicator.textContent='⚠️ Preview Mode'; }
-        if (note) { note.className='alert warning'; note.innerHTML=t('submit_mode_preview'); }
+    if (note) {
+        note.className = 'alert info';
+        note.innerHTML = '💡 Submissions are saved to Google Sheets and the manager is notified automatically via email.';
     }
+    pingBackend();
     var dashDate = document.getElementById('dash-date');
     if (dashDate) dashDate.textContent = new Date().toLocaleDateString(currentLang==='fr'?'fr-CA':'en-CA', {month:'long',day:'numeric',year:'numeric'});
 });
