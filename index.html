@@ -1098,28 +1098,36 @@ function toggleCctsCaseField() {
 function pingBackend() {
     var indicator = document.getElementById('backend-indicator');
     if (indicator) { indicator.className='backend-status checking'; indicator.textContent='⏳ Connecting...'; }
-    fetch(BACKEND_URL,
-        {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain'}, body:JSON.stringify({action:'ping'})})
-        .then(function(r){
-            if (r.status === 401 || r.status === 403) { throw new Error('auth'); }
-            return r.json();
-        })
-        .then(function(r){
-            backendConnected = !!(r && r.success);
-            if (indicator) {
-                indicator.className = 'backend-status ' + (backendConnected ? 'connected' : 'demo');
-                indicator.textContent = backendConnected ? '✅ Live — Emails Active' : '🔵 Demo Mode';
-            }
-        })
-        .catch(function(err){
-            backendConnected = false;
-            if (indicator) {
-                // If TELUS auth blocked it, show Demo Mode — not an error
-                var isAuth = err && (err.message === 'auth' || err.message === 'Failed to fetch');
-                indicator.className = 'backend-status demo';
-                indicator.textContent = isAuth ? '🔵 Demo Mode' : '🔵 Demo Mode';
-            }
-        });
+    var isGAS = (typeof google !== 'undefined' && typeof google.script !== 'undefined');
+    if (isGAS) {
+        google.script.run
+            .withSuccessHandler(function(r){
+                backendConnected = !!(r && r.success);
+                if (indicator) { indicator.className='backend-status connected'; indicator.textContent='✅ Live — Emails Active'; }
+            })
+            .withFailureHandler(function(){
+                backendConnected = false;
+                if (indicator) { indicator.className='backend-status demo'; indicator.textContent='🔵 Demo Mode'; }
+            })
+            .handleRequest({action:'ping'});
+    } else {
+        fetch(BACKEND_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain'}, body:JSON.stringify({action:'ping'})})
+            .then(function(r){
+                if (r.status === 401 || r.status === 403) throw new Error('auth');
+                return r.json();
+            })
+            .then(function(r){
+                backendConnected = !!(r && r.success);
+                if (indicator) {
+                    indicator.className = 'backend-status ' + (backendConnected ? 'connected' : 'demo');
+                    indicator.textContent = backendConnected ? '✅ Live — Emails Active' : '🔵 Demo Mode';
+                }
+            })
+            .catch(function(){
+                backendConnected = false;
+                if (indicator) { indicator.className='backend-status demo'; indicator.textContent='🔵 Demo Mode'; }
+            });
+    }
 }
 // ============================================================
 // AUTH
@@ -1354,7 +1362,14 @@ function submitFeedback(){
         coachingFollowup:null,statusHistory:[{status:'Submitted',time:nowStr,note:noteStr}],
         _userSubmitted:true,_emailSent:false
     };
-    if(backendConnected&&GAS_ENVIRONMENT){
+    var isGAS2 = (typeof google !== 'undefined' && typeof google.script !== 'undefined');
+    if (isGAS2) {
+        btn.textContent='📧 Sending...';
+        google.script.run
+            .withSuccessHandler(function(result){sub._emailSent=(result&&result.success);finishSubmission(sub);btn.disabled=false;btn.textContent=t('btn_submit');})
+            .withFailureHandler(function(){sub._emailSent=false;finishSubmission(sub);btn.disabled=false;btn.textContent=t('btn_submit');})
+            .handleRequest({action:'saveSubmission',data:JSON.stringify(sub)});
+    } else if(backendConnected){
         btn.textContent='📧 Sending...';
         fetch(BACKEND_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain'}, body:JSON.stringify({action:'saveSubmission',data:sub})})
             .then(function(r){return r.json();})
