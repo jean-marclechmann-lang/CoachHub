@@ -1027,6 +1027,7 @@ function toggleLanguage() {
 // ============================================================
 // CONSTANTS & STATE
 // ============================================================
+var BACKEND_URL = 'https://script.google.com/a/macros/telus.com/s/AKfycbyzt78R9j_bJY587bqGwXCx2baYx443f-_HYF7XXFH5kIV4Pb4GMyTpR_W7gV276vsrAw/exec';
 var GAS_ENVIRONMENT = false;
 var backendConnected = false;
 var ALLOWED_DOMAINS = ['telus.com','aecon.com','activo.ca','aflglobal.com'];
@@ -1097,7 +1098,7 @@ function toggleCctsCaseField() {
 function pingBackend() {
     var indicator = document.getElementById('backend-indicator');
     if (indicator) { indicator.className='backend-status checking'; indicator.textContent='⏳ Connecting...'; }
-    fetch('https://script.google.com/a/macros/telus.com/s/AKfycbzdgKGwUFcH0m9vPvmr13JceTAwF7XAf0t8Mrapc59xN04at_X-PJTJb_y5Y8vHQs7_Sg/exec',
+    fetch(BACKEND_URL,
         {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain'}, body:JSON.stringify({action:'ping'})})
         .then(function(r){
             if (r.status === 401 || r.status === 403) { throw new Error('auth'); }
@@ -1355,7 +1356,7 @@ function submitFeedback(){
     };
     if(backendConnected&&GAS_ENVIRONMENT){
         btn.textContent='📧 Sending...';
-        fetch('https://script.google.com/a/macros/telus.com/s/AKfycbzdgKGwUFcH0m9vPvmr13JceTAwF7XAf0t8Mrapc59xN04at_X-PJTJb_y5Y8vHQs7_Sg/exec', {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain'}, body:JSON.stringify({action:'saveSubmission',data:sub})})
+        fetch(BACKEND_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain'}, body:JSON.stringify({action:'saveSubmission',data:sub})})
             .then(function(r){return r.json();})
             .then(function(result){sub._emailSent=(result&&result.success);finishSubmission(sub);btn.disabled=false;btn.textContent=t('btn_submit');})
             .catch(function(){sub._emailSent=false;finishSubmission(sub);btn.disabled=false;btn.textContent=t('btn_submit');});
